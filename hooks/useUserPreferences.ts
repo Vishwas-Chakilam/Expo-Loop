@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Appearance } from 'react-native';
 import { toast } from '@/utils/toast';
 
 interface UserPreferences {
@@ -28,7 +28,7 @@ export function useUserPreferences() {
 
     try {
       setIsLoading(true);
-      
+
       const { data, error } = await supabase
         .from('user_preferences')
         .select('*')
@@ -98,19 +98,23 @@ export function useUserPreferences() {
 
     try {
       const updateData: any = {};
-      if (updates.darkMode !== undefined) updateData.dark_mode = updates.darkMode;
-      if (updates.notificationsEnabled !== undefined) updateData.notifications_enabled = updates.notificationsEnabled;
-      if (updates.reminderSound !== undefined) updateData.reminder_sound = updates.reminderSound;
+      if (updates.darkMode !== undefined)
+        updateData.dark_mode = updates.darkMode;
+      if (updates.notificationsEnabled !== undefined)
+        updateData.notifications_enabled = updates.notificationsEnabled;
+      if (updates.reminderSound !== undefined)
+        updateData.reminder_sound = updates.reminderSound;
 
       // Use upsert to handle both insert and update
-      const { error } = await supabase
-        .from('user_preferences')
-        .upsert({
+      const { error } = await supabase.from('user_preferences').upsert(
+        {
           user_id: user.id,
           ...updateData,
-        }, {
-          onConflict: 'user_id'
-        });
+        },
+        {
+          onConflict: 'user_id',
+        }
+      );
 
       if (error) {
         console.error('Failed to update preferences:', error);
@@ -119,16 +123,26 @@ export function useUserPreferences() {
       }
 
       // Update local state
-      setPreferences(prev => ({ ...prev, ...updates }));
+      setPreferences((prev) => ({ ...prev, ...updates }));
+
+      // Apply dark mode immediately
+      if (updates.darkMode !== undefined) {
+        Appearance.setColorScheme(updates.darkMode ? 'dark' : 'light');
+      }
 
       // Show success message
       if (updates.darkMode !== undefined) {
-        toast.success('Theme Updated', `Switched to ${updates.darkMode ? 'dark' : 'light'} mode.`);
+        toast.success(
+          'Theme Updated',
+          `Switched to ${updates.darkMode ? 'dark' : 'light'} mode.`
+        );
       }
       if (updates.notificationsEnabled !== undefined) {
         toast.success(
-          'Notifications Updated', 
-          `Notifications ${updates.notificationsEnabled ? 'enabled' : 'disabled'}.`
+          'Notifications Updated',
+          `Notifications ${
+            updates.notificationsEnabled ? 'enabled' : 'disabled'
+          }.`
         );
       }
     } catch (error) {

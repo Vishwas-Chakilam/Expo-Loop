@@ -1,11 +1,34 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, useColorScheme, Animated, Share, Platform, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Switch,
+  useColorScheme,
+  Animated,
+  Share,
+  Platform,
+  Alert,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { User, Moon, Sun, Download, Upload, Bell, Settings, LogOut, Award } from 'lucide-react-native';
+import {
+  User,
+  Moon,
+  Sun,
+  Download,
+  Upload,
+  Bell,
+  Settings,
+  LogOut,
+  Award,
+} from 'lucide-react-native';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { supabase } from '@/lib/supabase';
 import { useSupabaseHabits } from '@/hooks/useSupabaseHabits';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
@@ -18,10 +41,14 @@ export default function ProfileScreen() {
   const colors = getThemeColors(colorScheme);
   const { user, signOut } = useAuth();
   const { habits, exportData } = useSupabaseHabits();
-  const { preferences, updatePreferences, isLoading: preferencesLoading } = useUserPreferences();
+  const {
+    preferences,
+    updatePreferences,
+    isLoading: preferencesLoading,
+  } = useUserPreferences();
   const [buttonScale] = useState(new Animated.Value(1));
   const [isSigningOut, setIsSigningOut] = useState(false);
-  
+
   const handleDarkModeToggle = async (value: boolean) => {
     try {
       await updatePreferences({ darkMode: value });
@@ -36,11 +63,14 @@ export default function ProfileScreen() {
       if (value) {
         const { granted } = await requestNotificationPermissions();
         if (!granted) {
-          toast.error('Permission Denied', 'Please enable notifications in your device settings.');
+          toast.error(
+            'Permission Denied',
+            'Please enable notifications in your device settings.'
+          );
           return;
         }
       }
-      
+
       await updatePreferences({ notificationsEnabled: value });
     } catch (error) {
       console.error('Failed to update notifications:', error);
@@ -50,9 +80,12 @@ export default function ProfileScreen() {
 
   const generatePDFReport = async () => {
     try {
-      const totalCompletions = habits.reduce((acc, habit) => acc + habit.completions.length, 0);
-      const activeHabits = habits.filter(h => h.isActive).length;
-      
+      const totalCompletions = habits.reduce(
+        (acc, habit) => acc + habit.completions.length,
+        0
+      );
+      const activeHabits = habits.filter((h) => h.isActive).length;
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
@@ -93,24 +126,36 @@ export default function ProfileScreen() {
               <div class="stat-label">Total Completions</div>
             </div>
             <div class="stat">
-              <div class="stat-number">${habits.length > 0 ? Math.round(totalCompletions / habits.length) : 0}</div>
+              <div class="stat-number">${
+                habits.length > 0
+                  ? Math.round(totalCompletions / habits.length)
+                  : 0
+              }</div>
               <div class="stat-label">Avg. Per Habit</div>
             </div>
           </div>
           
           <div class="section">
             <div class="section-title">Your Habits</div>
-            ${habits.map(habit => `
-              <div class="habit-item" style="border-left-color: ${habit.color};">
+            ${habits
+              .map(
+                (habit) => `
+              <div class="habit-item" style="border-left-color: ${
+                habit.color
+              };">
                 <div class="habit-title">${habit.title}</div>
-                <div class="habit-description">${habit.description || 'No description'}</div>
+                <div class="habit-description">${
+                  habit.description || 'No description'
+                }</div>
                 <div class="habit-stats">
                   Completions: ${habit.completions.length} | 
                   Frequency: ${habit.frequency} | 
                   Created: ${new Date(habit.createdAt).toLocaleDateString()}
                 </div>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
           
           <div class="footer">
@@ -130,7 +175,9 @@ export default function ProfileScreen() {
         // For web, create download link
         const link = document.createElement('a');
         link.href = uri;
-        link.download = `habit-report-${new Date().toISOString().split('T')[0]}.pdf`;
+        link.download = `habit-report-${
+          new Date().toISOString().split('T')[0]
+        }.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -142,7 +189,10 @@ export default function ProfileScreen() {
         });
       }
 
-      toast.success('Report Generated', 'Your habit report has been created successfully!');
+      toast.success(
+        'Report Generated',
+        'Your habit report has been created successfully!'
+      );
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       toast.error('Error', 'Failed to generate PDF report');
@@ -152,7 +202,7 @@ export default function ProfileScreen() {
   const handleExportData = async () => {
     try {
       const exportedData = await exportData();
-      
+
       if (!exportedData) {
         return;
       }
@@ -162,7 +212,9 @@ export default function ProfileScreen() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `habit-data-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `habit-data-${
+          new Date().toISOString().split('T')[0]
+        }.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -192,39 +244,39 @@ export default function ProfileScreen() {
       'Are you sure you want to delete all your habits and progress? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete All', 
+        {
+          text: 'Delete All',
           style: 'destructive',
           onPress: async () => {
             try {
               if (!user) return;
-              
+
               // Delete all completions first
               await supabase
                 .from('habit_completions')
                 .delete()
                 .eq('user_id', user.id);
-              
+
               // Then delete all habits
-              await supabase
-                .from('habits')
-                .delete()
-                .eq('user_id', user.id);
-              
-              toast.success('Data Cleared', 'All your habits and progress have been deleted.');
+              await supabase.from('habits').delete().eq('user_id', user.id);
+
+              toast.success(
+                'Data Cleared',
+                'All your habits and progress have been deleted.'
+              );
             } catch (error) {
               console.error('Failed to clear data:', error);
               toast.error('Error', 'Failed to clear data');
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    
+
     // Button press animation
     Animated.sequence([
       Animated.timing(buttonScale, {
@@ -249,21 +301,24 @@ export default function ProfileScreen() {
     }
   };
 
-  const totalCompletions = habits.reduce((acc, habit) => acc + habit.completions.length, 0);
-  const activeHabits = habits.filter(h => h.isActive).length;
-  
+  const totalCompletions = habits.reduce(
+    (acc, habit) => acc + habit.completions.length,
+    0
+  );
+  const activeHabits = habits.filter((h) => h.isActive).length;
+
   const styles = getStyles(colors);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      
+
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
         <Text style={styles.subtitle}>Manage your account and preferences</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -276,7 +331,9 @@ export default function ProfileScreen() {
           <Text style={styles.userName}>
             {user?.user_metadata?.full_name || 'Habit Tracker User'}
           </Text>
-          <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          <Text style={styles.userEmail}>
+            {user?.email || 'user@example.com'}
+          </Text>
         </Animated.View>
 
         {/* Stats */}
@@ -291,7 +348,9 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>
-              {habits.length > 0 ? Math.round(totalCompletions / habits.length) : 0}
+              {habits.length > 0
+                ? Math.round(totalCompletions / habits.length)
+                : 0}
             </Text>
             <Text style={styles.statLabel}>Avg. Per Habit</Text>
           </View>
@@ -305,7 +364,8 @@ export default function ProfileScreen() {
             <View style={styles.achievementText}>
               <Text style={styles.achievementTitle}>Habit Builder</Text>
               <Text style={styles.achievementDescription}>
-                You've created {activeHabits} habit{activeHabits !== 1 ? 's' : ''}!
+                You've created {activeHabits} habit
+                {activeHabits !== 1 ? 's' : ''}!
               </Text>
             </View>
           </View>
@@ -314,7 +374,7 @@ export default function ProfileScreen() {
         {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          
+
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               {preferences.darkMode ? (
@@ -351,37 +411,48 @@ export default function ProfileScreen() {
         {/* Data Management */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Management</Text>
-          
-          <TouchableOpacity style={styles.actionButton} onPress={generatePDFReport}>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={generatePDFReport}
+          >
             <Download size={20} color={colors.primary} strokeWidth={2} />
             <Text style={styles.actionButtonText}>Export PDF Report</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleExportData}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleExportData}
+          >
             <Download size={20} color={colors.primary} strokeWidth={2} />
             <Text style={styles.actionButtonText}>Export Data (JSON)</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={handleImportData}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={handleImportData}
+          >
             <Upload size={20} color={colors.primary} strokeWidth={2} />
             <Text style={styles.actionButtonText}>Import Data</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.dangerButton]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.dangerButton]}
             onPress={handleClearData}
           >
             <Settings size={20} color="#FF3B30" strokeWidth={2} />
-            <Text style={[styles.actionButtonText, styles.dangerText]}>Clear All Data</Text>
+            <Text style={[styles.actionButtonText, styles.dangerText]}>
+              Clear All Data
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Account */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          
+
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.actionButton, styles.dangerButton]}
               onPress={handleSignOut}
               disabled={isSigningOut}
@@ -396,164 +467,167 @@ export default function ProfileScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Loop v1.0.0</Text>
-          <Text style={styles.footerText}>Build better habits, one day at a time</Text>
+          <Text style={styles.footerText}>
+            Build better habits, one day at a time
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: colors.text,
-    lineHeight: 38,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
-  },
-  userSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    marginBottom: 24,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  statsSection: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 32,
-    gap: 16,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  achievementCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  achievementText: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  achievementTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  achievementDescription: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingLabel: {
-    fontSize: 16,
-    color: colors.text,
-    marginLeft: 12,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 8,
-  },
-  actionButtonText: {
-    fontSize: 16,
-    color: colors.text,
-    marginLeft: 12,
-  },
-  dangerButton: {
-    backgroundColor: colors.surface,
-  },
-  dangerText: {
-    color: '#FF3B30',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-});
+const getStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: 24,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: colors.text,
+      lineHeight: 38,
+    },
+    subtitle: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      marginTop: 4,
+    },
+    content: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 24,
+      paddingBottom: 32,
+    },
+    userSection: {
+      alignItems: 'center',
+      paddingVertical: 24,
+      marginBottom: 24,
+    },
+    avatar: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 16,
+    },
+    userName: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    userEmail: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    statsSection: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 16,
+      marginBottom: 32,
+      gap: 16,
+    },
+    statItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    statNumber: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: 4,
+    },
+    statLabel: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    section: {
+      marginBottom: 32,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 16,
+    },
+    achievementCard: {
+      flexDirection: 'row',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      alignItems: 'center',
+    },
+    achievementText: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    achievementTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 2,
+    },
+    achievementDescription: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    settingItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 8,
+    },
+    settingLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    settingLabel: {
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 12,
+    },
+    actionButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 8,
+    },
+    actionButtonText: {
+      fontSize: 16,
+      color: colors.text,
+      marginLeft: 12,
+    },
+    dangerButton: {
+      backgroundColor: colors.surface,
+    },
+    dangerText: {
+      color: '#FF3B30',
+    },
+    footer: {
+      alignItems: 'center',
+      paddingVertical: 24,
+      marginTop: 24,
+    },
+    footerText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 16,
+    },
+  });

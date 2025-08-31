@@ -6,6 +6,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { CircleCheck as CheckCircle2, Circle, Flame, Target, Plus } from 'lucide-react-native';
 import { HabitCard } from '@/components/HabitCard';
 import { StreakCard } from '@/components/StreakCard';
+import { EditHabitModal } from '@/components/EditHabitModal';
 import { useSupabaseHabits } from '@/hooks/useSupabaseHabits';
 import { useAuth } from '@/contexts/AuthContext';
 import { getThemeColors } from '@/utils/theme';
@@ -15,8 +16,9 @@ export default function TodayScreen() {
   const colorScheme = useColorScheme();
   const colors = getThemeColors(colorScheme);
   const { user } = useAuth();
-  const { habits, toggleHabitCompletion, getTodayStats, getStreakStats, refresh, isLoading } = useSupabaseHabits();
+  const { habits, toggleHabitCompletion, updateHabit, deleteHabit, getTodayStats, getStreakStats, refresh, isLoading } = useSupabaseHabits();
   const [refreshing, setRefreshing] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
 
   // Auto-refresh when screen comes into focus
@@ -48,6 +50,27 @@ export default function TodayScreen() {
       await toggleHabitCompletion(habitId);
     } catch (error) {
       console.error('Failed to toggle habit:', error);
+    }
+  };
+
+  const handleEditHabit = (habit: Habit) => {
+    setEditingHabit(habit);
+  };
+
+  const handleSaveHabit = async (habitId: string, updates: Partial<Habit>) => {
+    try {
+      await updateHabit(habitId, updates);
+      setEditingHabit(null);
+    } catch (error) {
+      console.error('Failed to update habit:', error);
+    }
+  };
+
+  const handleDeleteHabit = async (habitId: string) => {
+    try {
+      await deleteHabit(habitId);
+    } catch (error) {
+      console.error('Failed to delete habit:', error);
     }
   };
 
@@ -174,6 +197,8 @@ export default function TodayScreen() {
                   <HabitCard
                     habit={habit}
                     onToggle={handleToggle}
+                    onEdit={handleEditHabit}
+                    onDelete={handleDeleteHabit}
                   />
                 </Animated.View>
               ))
@@ -181,6 +206,13 @@ export default function TodayScreen() {
           </View>
         </ScrollView>
       </Animated.View>
+
+      <EditHabitModal
+        visible={!!editingHabit}
+        habit={editingHabit}
+        onClose={() => setEditingHabit(null)}
+        onSave={handleSaveHabit}
+      />
     </SafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useColorScheme, Alert } from 'react-native';
 import { Calendar, Clock, Settings } from 'lucide-react-native';
 import { getThemeColors } from '@/utils/theme';
 
@@ -12,6 +12,18 @@ export function FrequencySelector({ frequency, onFrequencyChange }: FrequencySel
   const colorScheme = useColorScheme();
   const colors = getThemeColors(colorScheme);
   
+  const handleFrequencySelect = (selectedFrequency: 'daily' | 'weekly' | 'custom') => {
+    if (selectedFrequency === 'custom') {
+      Alert.alert(
+        'Custom Schedule',
+        'Custom scheduling will be available in a future update. For now, please choose Daily or Weekly.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    onFrequencyChange(selectedFrequency);
+  };
+
   const options = [
     { key: 'daily', label: 'Daily', icon: Calendar, description: 'Every day' },
     { key: 'weekly', label: 'Weekly', icon: Clock, description: 'Once per week' },
@@ -33,9 +45,10 @@ export function FrequencySelector({ frequency, onFrequencyChange }: FrequencySel
               key={option.key}
               style={[
                 styles.option,
-                isSelected && styles.selectedOption
+                isSelected && styles.selectedOption,
+                option.key === 'custom' && styles.disabledOption
               ]}
-              onPress={() => onFrequencyChange(option.key)}
+              onPress={() => handleFrequencySelect(option.key)}
             >
               <View style={styles.optionContent}>
                 <IconComponent 
@@ -86,6 +99,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   selectedOption: {
     borderColor: colors.primary,
     backgroundColor: `${colors.primary}10`,
+  },
+  disabledOption: {
+    opacity: 0.6,
   },
   optionContent: {
     flexDirection: 'row',

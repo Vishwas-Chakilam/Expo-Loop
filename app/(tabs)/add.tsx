@@ -7,6 +7,7 @@ import { Plus, Bell, Clock } from 'lucide-react-native';
 import { ColorPicker } from '@/components/ColorPicker';
 import { IconPicker } from '@/components/IconPicker';
 import { FrequencySelector } from '@/components/FrequencySelector';
+import { TimePickerModal } from '@/components/TimePickerModal';
 import { useSupabaseHabits } from '@/hooks/useSupabaseHabits';
 import { useAuth } from '@/contexts/AuthContext';
 import { getThemeColors } from '@/utils/theme';
@@ -26,6 +27,7 @@ export default function AddHabitScreen() {
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'custom'>('daily');
   const [reminderTime, setReminderTime] = useState('09:00');
   const [isLoading, setIsLoading] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [buttonScale] = useState(new Animated.Value(1));
   const [fadeAnim] = useState(new Animated.Value(0));
 
@@ -96,6 +98,11 @@ export default function AddHabitScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setReminderTime(time);
+    setShowTimePicker(false);
   };
 
   const styles = getStyles(colors);
@@ -176,7 +183,10 @@ export default function AddHabitScreen() {
                 <Text style={styles.reminderLabel}>Daily Reminder</Text>
               </View>
               
-              <TouchableOpacity style={styles.timeButton}>
+              <TouchableOpacity 
+                style={styles.timeButton}
+                onPress={() => setShowTimePicker(true)}
+              >
                 <Clock size={16} color={colors.primary} strokeWidth={2} />
                 <Text style={styles.timeText}>{reminderTime}</Text>
               </TouchableOpacity>
@@ -198,6 +208,13 @@ export default function AddHabitScreen() {
           </Animated.View>
         </ScrollView>
       </Animated.View>
+
+      <TimePickerModal
+        visible={showTimePicker}
+        selectedTime={reminderTime}
+        onTimeSelect={handleTimeSelect}
+        onClose={() => setShowTimePicker(false)}
+      />
     </SafeAreaView>
   );
 }
